@@ -1,6 +1,6 @@
 {
   "name": "tafel-sheets-viewer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows-Anwendung zur Auswertung der Warteliste der Oldenburger Tafel e.V.",
   "author": "Oldenburger Tafel e.V.",
   "license": "UNLICENSED",
@@ -8,8 +8,7 @@
   "scripts": {
     "start": "npm run build:css && electron .",
     "build:css": "tailwindcss -i assets/tailwind.css -o styles.css --minify",
-    "dist": "npm run build:css && electron-builder --win nsis --publish never",
-    "publish": "npm run build:css && electron-builder --win nsis --publish always"
+    "dist": "npm run build:css && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "electron-updater": "6.8.9",

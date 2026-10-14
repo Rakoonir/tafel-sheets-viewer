@@ -27,4 +27,4 @@ git tag v1.0.1
 git push origin v1.0.1
 ```
 
-GitHub Actions erstellt und veröffentlicht daraufhin den Windows-Installer. Installierte Apps prüfen beim Start automatisch auf Updates. Unter **Hilfe → Nach Updates suchen …** lässt sich die Prüfung manuell starten.
+GitHub Actions erstellt den Windows-Installer und lädt die `.exe`, die Update-Metadaten und die Blockmap als Release-Dateien hoch. Der Workflow bricht ab, falls diese Dateien fehlen. Installierte Apps prüfen beim Start automatisch auf Updates. Unter **Hilfe → Nach Updates suchen …** lässt sich die Prüfung manuell starten.
