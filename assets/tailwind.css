@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sf: var(--sf);
+  --color-tx: var(--tx);
+  --color-mu: var(--mu);
+  --color-ln: var(--ln);
+  --color-or: var(--or);
+  --color-orS: var(--orS);
+  --color-gr: var(--gr);
+  --color-grS: var(--grS);
+}

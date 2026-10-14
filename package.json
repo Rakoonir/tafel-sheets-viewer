@@ -1,0 +1,68 @@
+{
+  "name": "tafel-sheets-viewer",
+  "version": "1.0.0",
+  "description": "Windows-Anwendung zur Auswertung der Warteliste der Oldenburger Tafel e.V.",
+  "author": "Oldenburger Tafel e.V.",
+  "license": "UNLICENSED",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "npm run build:css && electron .",
+    "build:css": "tailwindcss -i assets/tailwind.css -o styles.css --minify",
+    "dist": "npm run build:css && electron-builder --win nsis --publish never",
+    "publish": "npm run build:css && electron-builder --win nsis --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9",
+    "lucide": "0.469.0",
+    "@e965/xlsx": "0.20.3"
+  },
+  "devDependencies": {
+    "electron": "44.7.2",
+    "electron-builder": "26.15.3",
+    "@tailwindcss/cli": "4.3.0",
+    "tailwindcss": "4.3.0"
+  },
+  "build": {
+    "appId": "de.oldenburger-tafel.wartelisteviewer",
+    "productName": "Warteliste Viewer",
+    "asar": true,
+    "files": [
+      "electron/**",
+      "assets/**",
+      "warteliste-viewer.html",
+      "styles.css",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/tafel-email-assistent.ico",
+      "artifactName": "Warteliste-Viewer-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Warteliste Viewer"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Rakoonir",
+        "repo": "tafel-sheets-viewer",
+        "releaseType": "release"
+      }
+    ]
+  }
+}
