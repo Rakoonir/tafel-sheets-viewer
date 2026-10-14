@@ -20,6 +20,9 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 <header class="bg-or text-white"><div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
   <i data-lucide="utensils" class="w-7 h-7"></i>
   <div><h1 class="text-xl font-bold leading-tight">Warteliste</h1><p class="text-sm opacity-90">Oldenburger Tafel e.V.</p></div>
+  <button id="supportBtn" class="ml-auto inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/15 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-haspopup="dialog" aria-controls="support-modal">
+    <i data-lucide="life-buoy" class="w-4 h-4"></i><span>Support</span>
+  </button>
 </div></header>
 <main class="max-w-7xl mx-auto px-4 py-5 pb-16">
 
@@ -59,11 +62,67 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
       <button id="mx" class="p-1 rounded hover:bg-white/20" aria-label="Schließen"><i data-lucide="x" class="w-5 h-5"></i></button></div>
     <div id="mb" class="p-5 space-y-5 max-h-[70vh] overflow-y-auto"></div></div>
 </div>
+<div id="support-modal" class="hidden support-overlay fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="support-title">
+  <div class="support-card relative w-full max-w-md overflow-hidden rounded-3xl bg-sf shadow-2xl">
+    <div class="support-banner relative overflow-hidden bg-or px-6 pb-7 pt-6 text-white">
+      <div class="support-orb" aria-hidden="true"></div>
+      <div class="relative flex items-start justify-between gap-4">
+        <div>
+          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide">
+            <i data-lucide="life-buoy" class="w-4 h-4"></i> WIR HELFEN GERNE
+          </div>
+          <h2 id="support-title" class="text-2xl font-bold">Support kontaktieren</h2>
+          <p class="mt-1 text-sm text-white/85">Fragen oder Probleme? Melde dich gerne.</p>
+        </div>
+        <button id="supportClose" class="rounded-xl p-2 transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" aria-label="Support-Fenster schließen">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+    <div class="space-y-5 p-6">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-mu">Ihr Ansprechpartner</p>
+        <p class="mt-1 text-xl font-bold">Kjano Eglins</p>
+        <a href="https://tafel.kjano.de" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-or hover:underline">
+          tafel.kjano.de <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        </a>
+      </div>
+      <div class="space-y-2">
+        <a href="mailto:support@kjano.de" class="support-link">
+          <span class="support-icon"><i data-lucide="mail" class="w-4 h-4"></i></span>
+          <span class="min-w-0 flex-1"><span class="support-label">E-Mail</span><span class="support-value">support@kjano.de</span></span>
+          <i data-lucide="arrow-up-right" class="w-4 h-4 text-mu"></i>
+        </a>
+        <a href="tel:+4915252777593" class="support-link">
+          <span class="support-icon"><i data-lucide="phone" class="w-4 h-4"></i></span>
+          <span class="min-w-0 flex-1"><span class="support-label">Telefon</span><span class="support-value">01525 2777593</span></span>
+          <i data-lucide="arrow-up-right" class="w-4 h-4 text-mu"></i>
+        </a>
+      </div>
+      <div class="flex items-center gap-3 rounded-2xl border border-ln bg-bg px-4 py-3">
+        <span class="support-icon"><i data-lucide="clock-3" class="w-4 h-4"></i></span>
+        <div><p class="support-label">Erreichbarkeit</p><p class="text-sm font-semibold">09:00 – 18:00 Uhr</p></div>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 bg-tx text-bg px-4 py-2 rounded-full text-sm opacity-0 transition pointer-events-none z-50"></div>
 <style>@media(min-width:900px){table{min-width:0!important}#body td,thead th{white-space:normal!important;padding:.6rem .5rem!important;word-break:break-word}}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid var(--ln);background:var(--sf)}.btn:hover{border-color:var(--or);color:var(--or)}
 .cp{display:inline-flex;vertical-align:middle;margin-left:6px;padding:3px;border-radius:6px;color:var(--mu)}.cp:hover{color:var(--or);background:var(--orS)}
-.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--orS);color:var(--or);margin-right:4px}</style>
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--orS);color:var(--or);margin-right:4px}
+.support-overlay{background:rgb(20 16 12 / 55%);backdrop-filter:blur(5px);animation:support-fade-in .18s ease-out}
+.support-card{animation:support-pop-in .22s cubic-bezier(.2,.8,.2,1);border:1px solid var(--ln)}
+.support-banner{background:linear-gradient(130deg,#e8630a,#f18431)}
+.support-orb{position:absolute;width:190px;height:190px;right:-65px;bottom:-115px;border:1px solid rgb(255 255 255 / 22%);border-radius:50%;box-shadow:0 0 0 22px rgb(255 255 255 / 8%),0 0 0 46px rgb(255 255 255 / 6%)}
+.support-link{display:flex;align-items:center;gap:12px;border:1px solid var(--ln);border-radius:16px;padding:12px;transition:border-color .15s,background-color .15s}
+.support-link:hover{border-color:var(--or);background:var(--orS)}
+.support-icon{display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:12px;background:var(--orS);color:var(--or)}
+.support-label{display:block;font-size:11px;color:var(--mu)}
+.support-value{display:block;overflow-wrap:anywhere;font-size:14px;font-weight:600}
+@keyframes support-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes support-pop-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.support-overlay,.support-card{animation:none}.support-link{transition:none}}</style>
 <script>
 let rows=[],filter='all',list=[];
 const $=id=>document.getElementById(id),ic=()=>lucide.createIcons();
@@ -129,7 +188,12 @@ function openM(row){
   r.ppl.forEach(p=>h+=sec('Person '+p.k,'users',f('Vorname',p.vn)+f('Nachname',p.nn)+f('Geburtsdatum',p.gb)+f('Passnummer',p.pn)));
   $('mb').innerHTML=h;$('modal').classList.remove('hidden');ic()}
 const closeM=()=>$('modal').classList.add('hidden');
-$('mx').onclick=closeM;$('modal').onclick=e=>{if(e.target===$('modal'))closeM()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+$('mx').onclick=closeM;$('modal').onclick=e=>{if(e.target===$('modal'))closeM()};
+const supportModal=$('support-modal'),closeSupport=()=>{supportModal.classList.add('hidden');$('supportBtn').focus()};
+$('supportBtn').onclick=()=>{supportModal.classList.remove('hidden');$('supportClose').focus()};
+$('supportClose').onclick=closeSupport;
+supportModal.onclick=e=>{if(e.target===supportModal)closeSupport()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!supportModal.classList.contains('hidden'))closeSupport();else closeM()}});
 document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)return copy(c.dataset.c);const o=e.target.closest('[data-o]');if(o)openM(+o.dataset.o)});
 $('q').oninput=render;$('rowmode').onchange=render;
 $('mails').onclick=()=>{const m=list.map(r=>r.mail).filter(Boolean);m.length?copy(m.join('; ')):toast('Keine E-Mails')};
