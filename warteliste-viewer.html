@@ -46,13 +46,31 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
     <button id="mails" class="btn"><i data-lucide="mail" class="w-4 h-4"></i>Alle E-Mails</button>
     <button id="names" class="btn"><i data-lucide="users" class="w-4 h-4"></i>Alle Namen</button>
     <button id="reload" class="btn"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Neu laden</button>
+    <button id="settingsBtn" class="btn"><i data-lucide="settings" class="w-4 h-4"></i>Einstellungen</button>
   </div>
-  <label class="flex items-center gap-2 text-xs text-mu mt-2"><input type="checkbox" id="rowmode" checked> Platz = Zeilennummer im Sheet (Kopfzeile = Zeile 1). Aus: erster Eintrag = Platz 1</label>
   <div class="mt-3 overflow-x-auto bg-sf border border-ln rounded-xl">
     <table class="w-full min-w-[820px] text-sm"><thead><tr class="text-left text-xs uppercase tracking-wide text-mu border-b border-ln">
-      <th class="p-3">Platz</th><th class="p-3">Name</th><th class="p-3">Alter</th><th class="p-3">Hinweis</th><th class="p-3">Haushalt</th><th class="p-3">Telefon</th><th class="p-3">E-Mail</th><th class="p-3">Passnr.</th></tr></thead>
+      <th class="p-3"><button class="sort-btn" data-sort="place">Platz <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="name">Name <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="age">Alter <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="note">Hinweis <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="household">Haushalt <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="tel">Telefon <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="email">E-Mail <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="pass">Passnr. <span></span></button></th></tr></thead>
     <tbody id="body"></tbody></table></div>
   <p id="count" class="text-sm text-mu mt-2"></p>
+</section>
+<section id="settings" class="hidden">
+  <button id="settingsBack" class="btn mb-4"><i data-lucide="arrow-left" class="w-4 h-4"></i>Zurück zur Warteliste</button>
+  <h2 class="text-xl font-bold mb-3">Einstellungen</h2>
+  <div class="max-w-2xl rounded-xl border border-ln bg-sf p-4">
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input type="checkbox" id="rowmode" checked class="mt-1">
+      <span><span class="block font-semibold">Platz = Zeilennummer im Sheet</span>
+        <span class="block text-sm text-mu">Kopfzeile = Zeile 1. Deaktiviert: erster Eintrag = Platz 1.</span></span>
+    </label>
+  </div>
 </section>
 </main>
 
@@ -107,8 +125,10 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
   </div>
 </div>
 <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 bg-tx text-bg px-4 py-2 rounded-full text-sm opacity-0 transition pointer-events-none z-50"></div>
-<style>@media(min-width:900px){table{min-width:0!important}#body td,thead th{white-space:normal!important;padding:.6rem .5rem!important;word-break:break-word}}
+<style>@media(min-width:900px){table{min-width:0!important}#body td{white-space:normal!important;padding:.6rem .5rem!important;word-break:normal!important;overflow-wrap:normal}thead th{white-space:nowrap!important;padding:.6rem .5rem!important;word-break:normal!important}}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid var(--ln);background:var(--sf)}.btn:hover{border-color:var(--or);color:var(--or)}
+.sort-btn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:inherit;color:inherit;text-align:left}.sort-btn:hover,.sort-btn[aria-pressed="true"]{color:var(--or)}
+.sort-btn span{width:1em;color:var(--or)}
 .cp{display:inline-flex;vertical-align:middle;margin-left:6px;padding:3px;border-radius:6px;color:var(--mu)}.cp:hover{color:var(--or);background:var(--orS)}
 .tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--orS);color:var(--or);margin-right:4px}
 .support-overlay{background:rgb(20 16 12 / 55%);backdrop-filter:blur(5px);animation:support-fade-in .18s ease-out}
@@ -124,10 +144,11 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 @keyframes support-pop-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.support-overlay,.support-card{animation:none}.support-link{transition:none}}</style>
 <script>
-let rows=[],filter='all',list=[];
+let rows=[],filter='all',list=[],sort={key:'place',dir:1};
 const $=id=>document.getElementById(id),ic=()=>lucide.createIcons();
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nm=s=>String(s).replace(/[\s\u00a0]+/g,' ').trim().toLowerCase();
+const collator=new Intl.Collator('de',{numeric:true,sensitivity:'base'});
 function toast(t){const e=$('toast');e.textContent=t;e.classList.remove('opacity-0');setTimeout(()=>e.classList.add('opacity-0'),1400)}
 function copy(t){const ok=()=>toast('Kopiert: '+(t.length>40?t.slice(0,40)+'…':t));
   const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('Kopieren nicht möglich')}a.remove()};
@@ -158,16 +179,31 @@ function loadData(data,r0){
     const ppl=[];for(let k=2;k<=5;k++){const f=s=>g(r,H.indexOf('person '+k+': '+s));const p={k,vn:f('vorname'),nn:f('nachname'),gb:f('geburtsdatum'),pn:f('passnummer')};if(p.vn||p.nn||p.gb||p.pn)ppl.push(p)}
     rows.push({row:r0+i+1,idx:rows.length+1,dtxt:g(r,c.d),vn:g(r,c.v),nn:g(r,c.n),str:g(r,c.a),ort:[g(r,c.p),g(r,c.o)].filter(Boolean).join(' '),
       gb:b?fmt(b):g(r,c.g),age:a,single:isYes(g(r,c.s)),tel:g(r,c.t),mail:g(r,c.e),pass:g(r,c.pn),ppl,size:1+ppl.length})});
-  $('drop').classList.add('hidden');$('dash').classList.remove('hidden');filter='all';render()}
+  $('drop').classList.add('hidden');$('dash').classList.remove('hidden');filter='all';sort={key:'place',dir:1};render()}
 const platz=r=>$('rowmode').checked?r.row:r.idx;
 const flt={all:()=>true,'60':r=>r.age>=60,single:r=>r.single,both:r=>r.age>=60&&r.single};
+const sortValue={
+  place:r=>platz(r),name:r=>[r.vn,r.nn].filter(Boolean).join(' '),age:r=>r.age,
+  note:r=>[r.age>=60?'60+':'',r.single?'Alleinst. mit Kind':''].filter(Boolean).join(' '),
+  household:r=>r.size,tel:r=>r.tel,email:r=>r.mail,pass:r=>r.pass
+};
 function render(){
   const defs=[['all','Auf der Warteliste','list','text-tx'],['60','Über 60 Jahre','user-round','text-or'],['single','Alleinstehend mit Kind','baby','text-or'],['both','Über 60 und alleinstehend mit Kind','heart-handshake','text-gr']];
   $('cards').innerHTML=defs.map(([k,l,i,cl])=>`<button data-k="${k}" class="text-left p-4 rounded-xl border-2 ${filter===k?'border-or bg-orS':'border-ln bg-sf hover:border-or'}">
     <i data-lucide="${i}" class="w-5 h-5 ${cl}"></i><div class="text-3xl font-bold mt-1 ${cl}">${rows.filter(flt[k]).length}</div><div class="text-xs text-mu">${l}</div></button>`).join('');
   document.querySelectorAll('#cards button').forEach(b=>b.onclick=()=>{filter=b.dataset.k;render()});
   const q=nm($('q').value);
-  list=rows.filter(flt[filter]).filter(r=>!q||nm(Object.values(r).join(' ')).includes(q)).sort((a,b)=>platz(a)-platz(b));
+  list=rows.filter(flt[filter]).filter(r=>!q||nm(Object.values(r).join(' ')).includes(q)).sort((a,b)=>{
+    const av=sortValue[sort.key](a),bv=sortValue[sort.key](b);
+    if(av==null||bv==null)return av==null?(bv==null?a.idx-b.idx:1):-1;
+    const n=typeof av==='number'&&typeof bv==='number'?av-bv:collator.compare(String(av),String(bv));
+    return n*sort.dir||a.idx-b.idx});
+  document.querySelectorAll('.sort-btn').forEach(b=>{
+    const active=b.dataset.sort===sort.key,th=b.closest('th');
+    b.querySelector('span').textContent=active?(sort.dir===1?'↑':'↓'):'';
+    b.setAttribute('aria-pressed',String(active));
+    b.setAttribute('aria-label','Nach '+b.childNodes[0].textContent.trim()+' '+(active&&sort.dir===-1?'absteigend':'aufsteigend')+' sortieren');
+    th.setAttribute('aria-sort',active?(sort.dir===1?'ascending':'descending'):'none')});
   const cp=t=>t?`<button class="cp" data-c="${esc(t)}" title="Kopieren"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>`:'';
   $('body').innerHTML=list.map(r=>`<tr class="border-b border-ln last:border-0 hover:bg-orS/40">
    <td class="p-3 font-bold text-or">${platz(r)}</td>
@@ -189,16 +225,20 @@ function openM(row){
   $('mb').innerHTML=h;$('modal').classList.remove('hidden');ic()}
 const closeM=()=>$('modal').classList.add('hidden');
 $('mx').onclick=closeM;$('modal').onclick=e=>{if(e.target===$('modal'))closeM()};
+const showSettings=()=>{$('dash').classList.add('hidden');$('settings').classList.remove('hidden');ic()};
+const hideSettings=()=>{$('settings').classList.add('hidden');$('dash').classList.remove('hidden');ic()};
+$('settingsBtn').onclick=showSettings;$('settingsBack').onclick=hideSettings;
 const supportModal=$('support-modal'),closeSupport=()=>{supportModal.classList.add('hidden');$('supportBtn').focus()};
 $('supportBtn').onclick=()=>{supportModal.classList.remove('hidden');$('supportClose').focus()};
 $('supportClose').onclick=closeSupport;
 supportModal.onclick=e=>{if(e.target===supportModal)closeSupport()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!supportModal.classList.contains('hidden'))closeSupport();else closeM()}});
-document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)return copy(c.dataset.c);const o=e.target.closest('[data-o]');if(o)openM(+o.dataset.o)});
+document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)return copy(c.dataset.c);const o=e.target.closest('[data-o]');if(o){openM(+o.dataset.o);return}
+  const s=e.target.closest('[data-sort]');if(s){const key=s.dataset.sort;sort=sort.key===key?{key,dir:-sort.dir}:{key,dir:1};render()}});
 $('q').oninput=render;$('rowmode').onchange=render;
 $('mails').onclick=()=>{const m=list.map(r=>r.mail).filter(Boolean);m.length?copy(m.join('; ')):toast('Keine E-Mails')};
 $('names').onclick=()=>copy(list.map(r=>r.vn+' '+r.nn).join('\n'));
-$('reload').onclick=()=>{$('dash').classList.add('hidden');$('drop').classList.remove('hidden')};
+$('reload').onclick=()=>{$('settings').classList.add('hidden');$('dash').classList.add('hidden');$('drop').classList.remove('hidden')};
 function readFile(f){const fr=new FileReader();fr.onload=e=>{try{load(XLSX.read(e.target.result,{type:'array',cellDates:true}))}catch(x){toast('Datei nicht lesbar')}};fr.readAsArrayBuffer(f)}
 $('file').onchange=e=>e.target.files[0]&&readFile(e.target.files[0]);
 $('pbtn').onclick=()=>{const t=$('paste').value;if(!t.trim()){toast('Textfeld ist leer');return}try{loadData(parseDsv(t),0)}catch(x){toast('Fehler: '+x.message)}};
