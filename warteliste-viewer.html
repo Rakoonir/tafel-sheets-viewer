@@ -189,7 +189,7 @@ function loadData(data,r0){
   if(data.length<2){toast('Keine Daten gefunden');return}
   const H=data[0].map(nm),ix=n=>H.indexOf(nm(n)),
     ixs=H.findIndex(h=>h.includes('alleinst')||h.includes('alleinerz'));
-  const c={d:['Registrierdatum','Anmeldedatum','Datum'].map(ix).find(i=>i>=0)??-1,v:ix('Vorname'),n:ix('Nachname'),a:ix('Adresse'),p:ix('PLZ'),o:ix('Ort'),al:ix('Alter'),g:ix('Geburtsdatum'),s:ixs,t:ix('Telefon'),e:ix('E-Mail'),pn:ix('Passnummer')};
+  const c={d:0,v:ix('Vorname'),n:ix('Nachname'),a:ix('Adresse'),p:ix('PLZ'),o:ix('Ort'),al:ix('Alter'),g:ix('Geburtsdatum'),s:ixs,t:ix('Telefon'),e:ix('E-Mail'),pn:ix('Passnummer')};
   const g=(r,i)=>i<0||r[i]===undefined?'':(r[i] instanceof Date?fmt(pd(r[i])):String(r[i]).trim());
   rows=[];
   data.forEach((r,i)=>{if(i===0||!(g(r,c.v)||g(r,c.n)))return;
