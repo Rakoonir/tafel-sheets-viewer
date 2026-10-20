@@ -20,7 +20,10 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 <header class="bg-or text-white"><div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
   <i data-lucide="utensils" class="w-7 h-7"></i>
   <div><h1 class="text-xl font-bold leading-tight">Warteliste</h1><p class="text-sm opacity-90">Oldenburger Tafel e.V.</p></div>
-  <button id="supportBtn" class="ml-auto inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/15 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-haspopup="dialog" aria-controls="support-modal">
+  <button id="updateBtn" class="update-btn ml-auto" aria-live="polite">
+    <span data-update-icon><i data-lucide="refresh-cw" class="w-4 h-4"></i></span><span class="update-label">Updates suchen</span><span class="update-version hidden"></span>
+  </button>
+  <button id="supportBtn" class="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/15 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-haspopup="dialog" aria-controls="support-modal">
     <i data-lucide="life-buoy" class="w-4 h-4"></i><span>Support</span>
   </button>
 </div></header>
@@ -51,6 +54,7 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
   <div class="mt-3 overflow-x-auto bg-sf border border-ln rounded-xl">
     <table class="w-full min-w-[820px] text-sm"><thead><tr class="text-left text-xs uppercase tracking-wide text-mu border-b border-ln">
       <th class="p-3"><button class="sort-btn" data-sort="place">Platz <span></span></button></th>
+      <th class="p-3"><button class="sort-btn" data-sort="registered">Registriert <span></span></button></th>
       <th class="p-3"><button class="sort-btn" data-sort="name">Name <span></span></button></th>
       <th class="p-3"><button class="sort-btn" data-sort="age">Alter <span></span></button></th>
       <th class="p-3"><button class="sort-btn" data-sort="note">Hinweis <span></span></button></th>
@@ -69,6 +73,11 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
       <input type="checkbox" id="rowmode" checked class="mt-1">
       <span><span class="block font-semibold">Platz = Zeilennummer im Sheet</span>
         <span class="block text-sm text-mu">Kopfzeile = Zeile 1. Deaktiviert: erster Eintrag = Platz 1.</span></span>
+    </label>
+    <label class="flex items-start gap-3 mt-4 cursor-pointer">
+      <input type="checkbox" id="hideSinglePersonHouseholds" class="mt-1">
+      <span><span class="block font-semibold">Einpersonenhaushalte bei „Alleinstehend mit Kind“ ausblenden</span>
+        <span class="block text-sm text-mu">Gilt auch für die kombinierte Liste „Über 60 und alleinstehend mit Kind“.</span></span>
     </label>
   </div>
 </section>
@@ -127,6 +136,13 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 bg-tx text-bg px-4 py-2 rounded-full text-sm opacity-0 transition pointer-events-none z-50"></div>
 <style>@media(min-width:900px){table{min-width:0!important}#body td{white-space:normal!important;padding:.6rem .5rem!important;word-break:normal!important;overflow-wrap:normal}thead th{white-space:nowrap!important;padding:.6rem .5rem!important;word-break:normal!important}}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid var(--ln);background:var(--sf)}.btn:hover{border-color:var(--or);color:var(--or)}
+.update-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:#fff;color:#9a3a00;font-size:14px;font-weight:750;box-shadow:0 2px 8px rgb(76 31 0 / 20%);transition:transform .15s,background-color .15s}
+.update-btn:hover{transform:translateY(-1px);background:#fff7ed}
+.update-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.update-btn[data-state="available"],.update-btn[data-state="downloaded"]{background:#fff3cd;color:#7a3700;animation:update-pulse 1.5s ease-in-out infinite}
+.update-btn:disabled{cursor:wait;opacity:.9}
+.update-version{padding:2px 7px;border-radius:999px;background:#c2410c;color:#fff;font-size:11px}
+@keyframes update-pulse{50%{box-shadow:0 0 0 4px rgb(255 243 205 / 35%),0 2px 8px rgb(76 31 0 / 20%)}}
 .sort-btn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:inherit;color:inherit;text-align:left}.sort-btn:hover,.sort-btn[aria-pressed="true"]{color:var(--or)}
 .sort-btn span{width:1em;color:var(--or)}
 .cp{display:inline-flex;vertical-align:middle;margin-left:6px;padding:3px;border-radius:6px;color:var(--mu)}.cp:hover{color:var(--or);background:var(--orS)}
@@ -142,7 +158,7 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 .support-value{display:block;overflow-wrap:anywhere;font-size:14px;font-weight:600}
 @keyframes support-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes support-pop-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(prefers-reduced-motion:reduce){.support-overlay,.support-card{animation:none}.support-link{transition:none}}</style>
+@media(prefers-reduced-motion:reduce){.support-overlay,.support-card,.update-btn{animation:none}.support-link{transition:none}}</style>
 <script>
 let rows=[],filter='all',list=[],sort={key:'place',dir:1};
 const $=id=>document.getElementById(id),ic=()=>lucide.createIcons();
@@ -154,7 +170,9 @@ function copy(t){const ok=()=>toast('Kopiert: '+(t.length>40?t.slice(0,40)+'…'
   const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('Kopieren nicht möglich')}a.remove()};
   navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(t).then(ok,fb):fb()}
 function pd(v){if(v instanceof Date&&!isNaN(v))return new Date(v.getFullYear(),v.getMonth(),v.getDate());
-  const m=String(v||'').match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);if(!m)return null;let y=+m[3];if(y<100)y+=y>30?1900:2000;return new Date(y,m[2]-1,+m[1])}
+  const s=String(v||''),m=s.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if(m){let y=+m[3];if(y<100)y+=y>30?1900:2000;return new Date(y,m[2]-1,+m[1])}
+  const iso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return iso?new Date(+iso[1],+iso[2]-1,+iso[3]):null}
 const fmt=d=>d?String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear():'';
 function age(b){if(!b)return null;const n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a}
 const isYes=v=>/^\s*(ja|j|yes|true|wahr|x|✓|✔|☑|1)\b/i.test(String(v));
@@ -171,29 +189,30 @@ function loadData(data,r0){
   if(data.length<2){toast('Keine Daten gefunden');return}
   const H=data[0].map(nm),ix=n=>H.indexOf(nm(n)),
     ixs=H.findIndex(h=>h.includes('alleinst')||h.includes('alleinerz'));
-  const c={d:ix('Datum'),v:ix('Vorname'),n:ix('Nachname'),a:ix('Adresse'),p:ix('PLZ'),o:ix('Ort'),al:ix('Alter'),g:ix('Geburtsdatum'),s:ixs,t:ix('Telefon'),e:ix('E-Mail'),pn:ix('Passnummer')};
+  const c={d:['Registrierdatum','Anmeldedatum','Datum'].map(ix).find(i=>i>=0)??-1,v:ix('Vorname'),n:ix('Nachname'),a:ix('Adresse'),p:ix('PLZ'),o:ix('Ort'),al:ix('Alter'),g:ix('Geburtsdatum'),s:ixs,t:ix('Telefon'),e:ix('E-Mail'),pn:ix('Passnummer')};
   const g=(r,i)=>i<0||r[i]===undefined?'':(r[i] instanceof Date?fmt(pd(r[i])):String(r[i]).trim());
   rows=[];
   data.forEach((r,i)=>{if(i===0||!(g(r,c.v)||g(r,c.n)))return;
-    const b=pd(r[c.g]);let a=age(b);if(a===null&&g(r,c.al)!==''&&!isNaN(+g(r,c.al)))a=+g(r,c.al);
+    const b=pd(r[c.g]),registered=pd(r[c.d]);let a=age(b);if(a===null&&g(r,c.al)!==''&&!isNaN(+g(r,c.al)))a=+g(r,c.al);
     const ppl=[];for(let k=2;k<=5;k++){const f=s=>g(r,H.indexOf('person '+k+': '+s));const p={k,vn:f('vorname'),nn:f('nachname'),gb:f('geburtsdatum'),pn:f('passnummer')};if(p.vn||p.nn||p.gb||p.pn)ppl.push(p)}
-    rows.push({row:r0+i+1,idx:rows.length+1,dtxt:g(r,c.d),vn:g(r,c.v),nn:g(r,c.n),str:g(r,c.a),ort:[g(r,c.p),g(r,c.o)].filter(Boolean).join(' '),
+    rows.push({row:r0+i+1,idx:rows.length+1,dtxt:registered?fmt(registered):g(r,c.d),vn:g(r,c.v),nn:g(r,c.n),str:g(r,c.a),ort:[g(r,c.p),g(r,c.o)].filter(Boolean).join(' '),
       gb:b?fmt(b):g(r,c.g),age:a,single:isYes(g(r,c.s)),tel:g(r,c.t),mail:g(r,c.e),pass:g(r,c.pn),ppl,size:1+ppl.length})});
   $('drop').classList.add('hidden');$('dash').classList.remove('hidden');filter='all';sort={key:'place',dir:1};render()}
 const platz=r=>$('rowmode').checked?r.row:r.idx;
 const flt={all:()=>true,'60':r=>r.age>=60,single:r=>r.single,both:r=>r.age>=60&&r.single};
+const matchesFilter=(key,r)=>flt[key](r)&&!((key==='single'||key==='both')&&$('hideSinglePersonHouseholds').checked&&r.size===1);
 const sortValue={
-  place:r=>platz(r),name:r=>[r.vn,r.nn].filter(Boolean).join(' '),age:r=>r.age,
+  place:r=>platz(r),registered:r=>pd(r.dtxt)?.getTime()??null,name:r=>[r.vn,r.nn].filter(Boolean).join(' '),age:r=>r.age,
   note:r=>[r.age>=60?'60+':'',r.single?'Alleinst. mit Kind':''].filter(Boolean).join(' '),
   household:r=>r.size,tel:r=>r.tel,email:r=>r.mail,pass:r=>r.pass
 };
 function render(){
   const defs=[['all','Auf der Warteliste','list','text-tx'],['60','Über 60 Jahre','user-round','text-or'],['single','Alleinstehend mit Kind','baby','text-or'],['both','Über 60 und alleinstehend mit Kind','heart-handshake','text-gr']];
   $('cards').innerHTML=defs.map(([k,l,i,cl])=>`<button data-k="${k}" class="text-left p-4 rounded-xl border-2 ${filter===k?'border-or bg-orS':'border-ln bg-sf hover:border-or'}">
-    <i data-lucide="${i}" class="w-5 h-5 ${cl}"></i><div class="text-3xl font-bold mt-1 ${cl}">${rows.filter(flt[k]).length}</div><div class="text-xs text-mu">${l}</div></button>`).join('');
+    <i data-lucide="${i}" class="w-5 h-5 ${cl}"></i><div class="text-3xl font-bold mt-1 ${cl}">${rows.filter(r=>matchesFilter(k,r)).length}</div><div class="text-xs text-mu">${l}</div></button>`).join('');
   document.querySelectorAll('#cards button').forEach(b=>b.onclick=()=>{filter=b.dataset.k;render()});
   const q=nm($('q').value);
-  list=rows.filter(flt[filter]).filter(r=>!q||nm(Object.values(r).join(' ')).includes(q)).sort((a,b)=>{
+  list=rows.filter(r=>matchesFilter(filter,r)).filter(r=>!q||nm(Object.values(r).join(' ')).includes(q)).sort((a,b)=>{
     const av=sortValue[sort.key](a),bv=sortValue[sort.key](b);
     if(av==null||bv==null)return av==null?(bv==null?a.idx-b.idx:1):-1;
     const n=typeof av==='number'&&typeof bv==='number'?av-bv:collator.compare(String(av),String(bv));
@@ -207,6 +226,7 @@ function render(){
   const cp=t=>t?`<button class="cp" data-c="${esc(t)}" title="Kopieren"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>`:'';
   $('body').innerHTML=list.map(r=>`<tr class="border-b border-ln last:border-0 hover:bg-orS/40">
    <td class="p-3 font-bold text-or">${platz(r)}</td>
+   <td class="p-3 whitespace-nowrap">${esc(r.dtxt)||'–'}</td>
    <td class="p-3 whitespace-nowrap"><button data-o="${r.row}" class="font-semibold underline decoration-dotted underline-offset-2 hover:text-or text-left">${esc(r.vn)} ${esc(r.nn)}</button>${cp(r.nn)}</td>
    <td class="p-3">${r.age??'–'}</td>
    <td class="p-3 whitespace-nowrap">${r.age>=60?'<span class="tag">60+</span>':''}${r.single?'<span class="tag">Alleinst. mit Kind</span>':''}</td>
@@ -232,10 +252,36 @@ const supportModal=$('support-modal'),closeSupport=()=>{supportModal.classList.a
 $('supportBtn').onclick=()=>{supportModal.classList.remove('hidden');$('supportClose').focus()};
 $('supportClose').onclick=closeSupport;
 supportModal.onclick=e=>{if(e.target===supportModal)closeSupport()};
+const updateBtn=$('updateBtn'),updateLabel=updateBtn.querySelector('.update-label'),updateVersion=updateBtn.querySelector('.update-version');
+function showUpdateStatus(status){
+  updateBtn.dataset.state=status.state;
+  updateBtn.disabled=['checking','downloading','unavailable'].includes(status.state);
+  updateVersion.textContent=status.version||'';
+  updateVersion.classList.toggle('hidden',!status.version);
+  const labels={idle:'Updates suchen',checking:'Suche Updates …',available:'Update verfügbar',downloading:`Update lädt … ${status.percent}%`,
+    downloaded:'Jetzt aktualisieren','up-to-date':'Auf aktuellem Stand',error:'Erneut prüfen',unavailable:'Nur in installierter App'};
+  updateLabel.textContent=labels[status.state]||'Updates suchen';
+  const icons={idle:'refresh-cw',checking:'loader-circle',available:'arrow-up-circle',downloading:'download',downloaded:'circle-check',
+    'up-to-date':'circle-check',error:'refresh-cw',unavailable:'monitor-down'};
+  updateBtn.querySelector('[data-update-icon]').innerHTML=`<i data-lucide="${icons[status.state]||'refresh-cw'}" class="w-4 h-4"></i>`;
+  ic()}
+if(window.updates){
+  window.updates.onStatus(showUpdateStatus);
+  window.updates.getStatus().then(showUpdateStatus).catch(error=>{console.error('Update-Status konnte nicht geladen werden:',error);showUpdateStatus({state:'error'})});
+  updateBtn.onclick=()=>{
+    if(updateBtn.dataset.state==='downloaded'){
+      window.updates.install().catch(error=>{console.error('Update konnte nicht installiert werden:',error);toast('Update konnte nicht installiert werden')});
+    }else{
+      window.updates.check().catch(error=>{console.error('Updateprüfung konnte nicht gestartet werden:',error);showUpdateStatus({state:'error'})});
+    }
+  };
+}else{
+  showUpdateStatus({state:'unavailable'});
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!supportModal.classList.contains('hidden'))closeSupport();else closeM()}});
 document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)return copy(c.dataset.c);const o=e.target.closest('[data-o]');if(o){openM(+o.dataset.o);return}
   const s=e.target.closest('[data-sort]');if(s){const key=s.dataset.sort;sort=sort.key===key?{key,dir:-sort.dir}:{key,dir:1};render()}});
-$('q').oninput=render;$('rowmode').onchange=render;
+$('q').oninput=render;$('rowmode').onchange=render;$('hideSinglePersonHouseholds').onchange=render;
 $('mails').onclick=()=>{const m=list.map(r=>r.mail).filter(Boolean);m.length?copy(m.join('; ')):toast('Keine E-Mails')};
 $('names').onclick=()=>copy(list.map(r=>r.vn+' '+r.nn).join('\n'));
 $('reload').onclick=()=>{$('settings').classList.add('hidden');$('dash').classList.add('hidden');$('drop').classList.remove('hidden')};

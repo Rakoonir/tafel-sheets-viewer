@@ -1,37 +1,39 @@
-const { app, BrowserWindow, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
-let manualUpdateCheck = false;
+let updateStatus = { state: 'idle' };
 
-function checkForUpdates(manual = false) {
-  manualUpdateCheck = manual;
+function publishUpdateStatus(status) {
+  updateStatus = status;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('updates:status', status);
+  }
+}
 
+function checkForUpdates() {
   if (!app.isPackaged) {
-    if (manual) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        message: 'Updates können in der installierten Anwendung geprüft werden.'
-      });
-    }
+    publishUpdateStatus({ state: 'unavailable' });
     return;
   }
 
+  publishUpdateStatus({ state: 'checking' });
   autoUpdater.checkForUpdates().catch((error) => {
     console.error('Updateprüfung fehlgeschlagen:', error);
-    if (manualUpdateCheck) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'error',
-        title: 'Updateprüfung fehlgeschlagen',
-        message: 'Die GitHub-Releases konnten nicht geprüft werden.',
-        detail: error.message
-      });
-    }
-    manualUpdateCheck = false;
+    publishUpdateStatus({ state: 'error' });
   });
 }
+
+ipcMain.handle('updates:get-status', () => updateStatus);
+ipcMain.handle('updates:check', () => checkForUpdates());
+ipcMain.handle('updates:install', () => {
+  if (updateStatus.state !== 'downloaded') {
+    throw new Error('Es ist kein heruntergeladenes Update zur Installation bereit.');
+  }
+  autoUpdater.quitAndInstall();
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -44,7 +46,8 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs')
     }
   });
 
@@ -67,53 +70,24 @@ autoUpdater.allowPrerelease = false;
 autoUpdater.logger = console;
 
 autoUpdater.on('update-available', (info) => {
-  if (manualUpdateCheck) {
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Update verfügbar',
-      message: `Version ${info.version} wird im Hintergrund heruntergeladen.`
-    });
-  }
+  publishUpdateStatus({ state: 'available', version: info.version });
 });
 
 autoUpdater.on('update-not-available', () => {
-  if (manualUpdateCheck) {
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Kein Update verfügbar',
-      message: 'Sie verwenden bereits die aktuelle Version.'
-    });
-  }
-  manualUpdateCheck = false;
+  publishUpdateStatus({ state: 'up-to-date' });
 });
 
-autoUpdater.on('update-downloaded', async (info) => {
-  const { response } = await dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    buttons: ['Jetzt neu starten', 'Später'],
-    defaultId: 0,
-    cancelId: 1,
-    title: 'Update bereit',
-    message: `Version ${info.version} wurde heruntergeladen.`,
-    detail: 'Die Anwendung muss neu gestartet werden, um das Update zu installieren.'
-  });
+autoUpdater.on('download-progress', (progress) => {
+  publishUpdateStatus({ state: 'downloading', percent: Math.round(progress.percent) });
+});
 
-  if (response === 0) {
-    autoUpdater.quitAndInstall();
-  }
+autoUpdater.on('update-downloaded', (info) => {
+  publishUpdateStatus({ state: 'downloaded', version: info.version });
 });
 
 autoUpdater.on('error', (error) => {
   console.error('Updater-Fehler:', error);
-  if (manualUpdateCheck && mainWindow) {
-    dialog.showMessageBox(mainWindow, {
-      type: 'error',
-      title: 'Update fehlgeschlagen',
-      message: 'Das Update konnte nicht geladen werden.',
-      detail: error.message
-    });
-  }
-  manualUpdateCheck = false;
+  publishUpdateStatus({ state: 'error' });
 });
 
 app.whenReady().then(() => {
@@ -127,7 +101,7 @@ app.whenReady().then(() => {
       submenu: [
         {
           label: 'Nach Updates suchen …',
-          click: () => checkForUpdates(true)
+          click: () => checkForUpdates()
         },
         { type: 'separator' },
         {
