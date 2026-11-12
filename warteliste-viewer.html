@@ -45,7 +45,7 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 </section>
 
 <section id="dash" class="hidden">
-  <div id="cards" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+  <div id="cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"></div>
   <div class="flex flex-wrap items-center gap-2 mt-5">
     <div class="relative flex-1 min-w-[180px]"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-mu"></i>
       <input id="q" type="search" placeholder="Suchen (Name, Telefon, E-Mail …)" class="w-full pl-9 pr-3 py-2 rounded-lg border border-ln bg-sf"></div>
@@ -230,11 +230,37 @@ function loadData(data,r0){
       const f=key=>g(r,cols[key]??-1);
       return {k,vn:f('vorname'),nn:f('nachname'),gb:f('geburtsdatum'),pn:f('passnummer')};
     }).filter(p=>p.vn||p.nn||p.gb||p.pn);
-    rows.push({row:r0+i+1,idx:rows.length+1,dtxt:registered?fmt(registered):g(r,c.d),vn:g(r,c.v),nn:g(r,c.n),str:g(r,c.a),ort:[g(r,c.p),g(r,c.o)].filter(Boolean).join(' '),
+    rows.push({row:r0+i+1,sourceLastRow:r0+i+1,idx:rows.length+1,dtxt:registered?fmt(registered):g(r,c.d),vn:g(r,c.v),nn:g(r,c.n),str:g(r,c.a),ort:[g(r,c.p),g(r,c.o)].filter(Boolean).join(' '),
       gb:b?fmt(b):g(r,c.g),age:a,single:isYes(g(r,c.s)),tel:g(r,c.t),mail:g(r,c.e),pass:g(r,c.pn),ppl,size:1+ppl.length})});
+  rows=mergeSplitHouseholds(rows);
+  rows.forEach((r,i)=>{r.idx=i+1;r.size=1+r.ppl.length});
   $('drop').classList.add('hidden');$('dash').classList.remove('hidden');filter='all';sort={key:'place',dir:1};render()}
+function householdIdentity(r){
+  const name=[nm(r.vn),nm(r.nn)].filter(Boolean).join('|'),address=nm(r.str),birthdate=nm(r.gb);
+  return name&&address&&birthdate?[name,address,birthdate].join('|'):'';
+}
+function personIdentity(p){
+  if(p.pn)return 'pass:'+nm(p.pn);
+  const name=[nm(p.vn),nm(p.nn)].filter(Boolean).join('|');
+  return name?`name:${name}|birth:${nm(p.gb)}`:'';
+}
+function mergeSplitHouseholds(source){
+  const merged=[];
+  source.forEach(r=>{
+    const previous=merged.at(-1),identity=householdIdentity(r);
+    if(!identity||!previous||previous.sourceLastRow+1!==r.row||householdIdentity(previous)!==identity){
+      merged.push(r);
+      return;
+    }
+    const people=new Map(previous.ppl.map(p=>[personIdentity(p)||`row:${r.row}:person:${p.k}`,p]));
+    r.ppl.forEach(p=>{const key=personIdentity(p)||`row:${r.row}:person:${p.k}`;if(!people.has(key))people.set(key,p)});
+    previous.ppl=[...people.values()].map((p,i)=>({...p,k:i+2}));
+    previous.sourceLastRow=r.sourceLastRow;
+  });
+  return merged;
+}
 const platz=r=>$('rowmode').checked?r.row:r.idx;
-const flt={all:()=>true,'60':r=>r.age>=60,single:r=>r.single,both:r=>r.age>=60&&r.single};
+const flt={all:()=>true,'60':r=>r.age>=60,single:r=>r.single,both:r=>r.age>=60&&r.single,large:r=>r.size>4};
 const hasEligibleChild=r=>!r.ppl.length||r.ppl.some(p=>{const a=age(pd(p.gb));return a===null||a<18});
 const matchesFilter=(key,r)=>flt[key](r)
   &&!((key==='single'||key==='both')&&$('hideSinglePersonHouseholds').checked&&r.size===1)
@@ -245,9 +271,9 @@ const sortValue={
   household:r=>r.size,tel:r=>r.tel,email:r=>r.mail,pass:r=>r.pass
 };
 function render(){
-  const defs=[['all','Auf der Warteliste','list','text-tx'],['60','Über 60 Jahre','user-round','text-or'],['single','Alleinstehend mit Kind','baby','text-or'],['both','Über 60 und alleinstehend mit Kind','heart-handshake','text-gr']];
-  $('cards').innerHTML=defs.map(([k,l,i,cl])=>`<button data-k="${k}" class="text-left p-4 rounded-xl border-2 ${filter===k?'border-or bg-orS':'border-ln bg-sf hover:border-or'}">
-    <i data-lucide="${i}" class="w-5 h-5 ${cl}"></i><div class="text-3xl font-bold mt-1 ${cl}">${rows.filter(r=>matchesFilter(k,r)).length}</div><div class="text-xs text-mu">${l}</div></button>`).join('');
+  const defs=[['all','Auf der Warteliste','list','text-tx'],['60','Über 60 Jahre','user-round','text-or'],['single','Alleinstehend mit Kind','baby','text-or'],['both','Über 60 und alleinstehend mit Kind','heart-handshake','text-gr'],['large','Großfamilien','users-round','text-or']];
+  $('cards').innerHTML=defs.map(([k,l,i,cl])=>`<button data-k="${k}" class="flex items-center gap-3 text-left p-3 rounded-xl border-2 ${filter===k?'border-or bg-orS':'border-ln bg-sf hover:border-or'}">
+    <i data-lucide="${i}" class="w-4 h-4 shrink-0 ${cl}"></i><span class="min-w-0"><span class="block text-2xl font-bold leading-none ${cl}">${rows.filter(r=>matchesFilter(k,r)).length}</span><span class="block mt-1 text-xs leading-tight text-mu">${l}</span></span></button>`).join('');
   document.querySelectorAll('#cards button').forEach(b=>b.onclick=()=>{filter=b.dataset.k;render()});
   const q=nm($('q').value);
   list=rows.filter(r=>matchesFilter(filter,r)).filter(r=>!q||nm(Object.values(r).join(' ')).includes(q)).sort((a,b)=>{
