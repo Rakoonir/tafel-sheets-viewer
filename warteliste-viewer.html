@@ -35,10 +35,13 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
   <p class="text-sm text-mu">.xlsx oder .csv aus Google Sheets (Datei → Herunterladen)</p>
   <label class="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-or text-white font-medium cursor-pointer hover:opacity-90">
     <i data-lucide="upload" class="w-4 h-4"></i>Datei auswählen<input type="file" id="file" accept=".xlsx,.xls,.csv,.tsv" hidden></label>
+  <button id="googleLoad" class="inline-flex items-center gap-2 mt-4 ml-2 px-4 py-2 rounded-lg border border-or text-or font-medium hover:bg-orS">
+    <i data-lucide="cloud-download" class="w-4 h-4"></i>Aus Google abrufen</button>
+  <button id="settingsBtnDrop" class="btn mt-4 ml-2"><i data-lucide="settings" class="w-4 h-4"></i>Einstellungen</button>
   <details class="mt-5 text-left max-w-xl mx-auto"><summary class="cursor-pointer text-mu text-sm">Oder direkt aus Google Sheets einfügen</summary>
     <textarea id="paste" class="w-full h-24 mt-2 p-2 text-xs font-mono rounded-lg border border-ln bg-bg" placeholder="In Sheets Strg+A, Strg+C – hier Strg+V"></textarea>
     <button id="pbtn" class="mt-2 px-3 py-1.5 rounded-lg border border-ln bg-sf hover:border-or">Einfügen &amp; auswerten</button></details>
-  <p class="mt-5 text-xs text-mu inline-flex items-center gap-1"><i data-lucide="lock" class="w-3.5 h-3.5"></i>Daten werden nur im Browser verarbeitet – nichts wird hochgeladen oder gespeichert.</p>
+  <p class="mt-5 text-xs text-mu inline-flex items-center gap-1"><i data-lucide="lock" class="w-3.5 h-3.5"></i>Dateien und eingefügte Daten werden lokal verarbeitet. Beim Google-Abruf werden die Daten direkt von Google gelesen.</p>
 </section>
 
 <section id="dash" class="hidden">
@@ -48,6 +51,7 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
       <input id="q" type="search" placeholder="Suchen (Name, Telefon, E-Mail …)" class="w-full pl-9 pr-3 py-2 rounded-lg border border-ln bg-sf"></div>
     <button id="mails" class="btn"><i data-lucide="mail" class="w-4 h-4"></i>Alle E-Mails</button>
     <button id="names" class="btn"><i data-lucide="users" class="w-4 h-4"></i>Alle Namen</button>
+    <button id="googleReload" class="btn"><i data-lucide="cloud-download" class="w-4 h-4"></i>Aus Google abrufen</button>
     <button id="reload" class="btn"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Neu laden</button>
     <button id="settingsBtn" class="btn"><i data-lucide="settings" class="w-4 h-4"></i>Einstellungen</button>
   </div>
@@ -79,6 +83,22 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
       <span><span class="block font-semibold">Einpersonenhaushalte bei „Alleinstehend mit Kind“ ausblenden</span>
         <span class="block text-sm text-mu">Gilt auch für die kombinierte Liste „Über 60 und alleinstehend mit Kind“.</span></span>
     </label>
+    <label class="flex items-start gap-3 mt-4 cursor-pointer">
+      <input type="checkbox" id="hideAdultChildren" class="mt-1">
+      <span><span class="block font-semibold">Kinder ab 18 Jahren bei „Alleinstehend mit Kind“ ausblenden</span>
+        <span class="block text-sm text-mu">Blendet sie in den Personendetails aus. Ein Eintrag erscheint nur dann weiter in dieser Liste, wenn mindestens ein Kind unter 18 oder ohne Geburtsdatum erfasst ist.</span></span>
+    </label>
+    <div class="mt-6 border-t border-ln pt-4">
+      <h3 class="font-semibold">Google Sheets</h3>
+      <p class="mt-1 text-sm text-mu">Die Angaben bleiben auf diesem Computer. Das Sheet wird mit Leseberechtigung über Ihr Google-Konto abgerufen. Client-ID und Link werden lokal gespeichert; das Client-Secret wird verschlüsselt auf diesem Computer gespeichert.</p>
+      <label class="block mt-4 text-sm font-medium" for="googleClientId">OAuth-Client-ID</label>
+      <input id="googleClientId" type="text" autocomplete="off" spellcheck="false" class="mt-1 w-full px-3 py-2 rounded-lg border border-ln bg-bg" placeholder="…apps.googleusercontent.com">
+      <label class="block mt-3 text-sm font-medium" for="googleClientSecret">Client-Secret</label>
+      <input id="googleClientSecret" type="password" autocomplete="new-password" spellcheck="false" class="mt-1 w-full px-3 py-2 rounded-lg border border-ln bg-bg" placeholder="Nur beim ersten Abruf oder nach Änderung erforderlich">
+      <label class="block mt-3 text-sm font-medium" for="googleSheetUrl">Link zur Google-Tabelle</label>
+      <input id="googleSheetUrl" type="url" autocomplete="url" spellcheck="false" class="mt-1 w-full px-3 py-2 rounded-lg border border-ln bg-bg" placeholder="https://docs.google.com/spreadsheets/d/…">
+      <p class="mt-2 text-xs text-mu">Das Client-Secret finden Sie in der Google Cloud Console bei den OAuth-Clientdetails. Beim ersten Abruf öffnet sich die Google-Anmeldung. Es wird nur Leserechte-Zugriff auf Google Sheets angefordert.</p>
+    </div>
   </div>
 </section>
 </main>
@@ -194,13 +214,27 @@ function loadData(data,r0){
   rows=[];
   data.forEach((r,i)=>{if(i===0||!(g(r,c.v)||g(r,c.n)))return;
     const b=pd(r[c.g]),registered=pd(r[c.d]);let a=age(b);if(a===null&&g(r,c.al)!==''&&!isNaN(+g(r,c.al)))a=+g(r,c.al);
-    const ppl=[];for(let k=2;k<=5;k++){const f=s=>g(r,H.indexOf('person '+k+': '+s));const p={k,vn:f('vorname'),nn:f('nachname'),gb:f('geburtsdatum'),pn:f('passnummer')};if(p.vn||p.nn||p.gb||p.pn)ppl.push(p)}
+    const personColumns=new Map();
+    H.forEach((header,col)=>{
+      const m=header.match(/^person\s*(\d+)\s*[:.\s\-–—]+\s*(vorname|nachname|geburtsdatum|passnummer)\b/);
+      if(!m||+m[1]<2)return;
+      const person=personColumns.get(+m[1])||{};
+      person[m[2]]=col;
+      personColumns.set(+m[1],person);
+    });
+    const ppl=[...personColumns].sort(([a],[b])=>a-b).map(([k,cols])=>{
+      const f=key=>g(r,cols[key]??-1);
+      return {k,vn:f('vorname'),nn:f('nachname'),gb:f('geburtsdatum'),pn:f('passnummer')};
+    }).filter(p=>p.vn||p.nn||p.gb||p.pn);
     rows.push({row:r0+i+1,idx:rows.length+1,dtxt:registered?fmt(registered):g(r,c.d),vn:g(r,c.v),nn:g(r,c.n),str:g(r,c.a),ort:[g(r,c.p),g(r,c.o)].filter(Boolean).join(' '),
       gb:b?fmt(b):g(r,c.g),age:a,single:isYes(g(r,c.s)),tel:g(r,c.t),mail:g(r,c.e),pass:g(r,c.pn),ppl,size:1+ppl.length})});
   $('drop').classList.add('hidden');$('dash').classList.remove('hidden');filter='all';sort={key:'place',dir:1};render()}
 const platz=r=>$('rowmode').checked?r.row:r.idx;
 const flt={all:()=>true,'60':r=>r.age>=60,single:r=>r.single,both:r=>r.age>=60&&r.single};
-const matchesFilter=(key,r)=>flt[key](r)&&!((key==='single'||key==='both')&&$('hideSinglePersonHouseholds').checked&&r.size===1);
+const hasEligibleChild=r=>!r.ppl.length||r.ppl.some(p=>{const a=age(pd(p.gb));return a===null||a<18});
+const matchesFilter=(key,r)=>flt[key](r)
+  &&!((key==='single'||key==='both')&&$('hideSinglePersonHouseholds').checked&&r.size===1)
+  &&!((key==='single'||key==='both')&&$('hideAdultChildren').checked&&!hasEligibleChild(r));
 const sortValue={
   place:r=>platz(r),registered:r=>pd(r.dtxt)?.getTime()??null,name:r=>[r.vn,r.nn].filter(Boolean).join(' '),age:r=>r.age,
   note:r=>[r.age>=60?'60+':'',r.single?'Alleinst. mit Kind':''].filter(Boolean).join(' '),
@@ -241,13 +275,15 @@ function openM(row){
   const sec=(t,i,b)=>`<div><h3 class="flex items-center gap-2 text-sm font-bold text-or mb-1"><i data-lucide="${i}" class="w-4 h-4"></i>${t}</h3>${b}</div>`;
   let h=sec('Hauptperson','user',f('Vorname',r.vn)+f('Nachname',r.nn)+f('Geburtsdatum',r.gb)+f('Alter',r.age!=null?String(r.age):'')+f('Alleinstehend mit Kind',r.single?'Ja':'Nein')+f('Passnummer',r.pass));
   h+=sec('Kontakt','phone',f('Telefon',r.tel)+f('E-Mail',r.mail))+sec('Adresse','map-pin',f('Straße',r.str)+f('PLZ / Ort',r.ort)+f('Komplett',[r.str,r.ort].filter(Boolean).join(', ')));
-  r.ppl.forEach(p=>h+=sec('Person '+p.k,'users',f('Vorname',p.vn)+f('Nachname',p.nn)+f('Geburtsdatum',p.gb)+f('Passnummer',p.pn)));
+  r.ppl.filter(p=>!(r.single&&$('hideAdultChildren').checked&&age(pd(p.gb))>=18))
+    .forEach(p=>h+=sec('Person '+p.k,'users',f('Vorname',p.vn)+f('Nachname',p.nn)+f('Geburtsdatum',p.gb)+f('Passnummer',p.pn)));
   $('mb').innerHTML=h;$('modal').classList.remove('hidden');ic()}
 const closeM=()=>$('modal').classList.add('hidden');
 $('mx').onclick=closeM;$('modal').onclick=e=>{if(e.target===$('modal'))closeM()};
-const showSettings=()=>{$('dash').classList.add('hidden');$('settings').classList.remove('hidden');ic()};
-const hideSettings=()=>{$('settings').classList.add('hidden');$('dash').classList.remove('hidden');ic()};
-$('settingsBtn').onclick=showSettings;$('settingsBack').onclick=hideSettings;
+let settingsReturnId='dash';
+const showSettings=()=>{settingsReturnId=$('dash').classList.contains('hidden')?'drop':'dash';$(settingsReturnId).classList.add('hidden');$('settings').classList.remove('hidden');ic()};
+const hideSettings=()=>{$('settings').classList.add('hidden');$(settingsReturnId).classList.remove('hidden');ic()};
+$('settingsBtn').onclick=showSettings;$('settingsBtnDrop').onclick=showSettings;$('settingsBack').onclick=hideSettings;
 const supportModal=$('support-modal'),closeSupport=()=>{supportModal.classList.add('hidden');$('supportBtn').focus()};
 $('supportBtn').onclick=()=>{supportModal.classList.remove('hidden');$('supportClose').focus()};
 $('supportClose').onclick=closeSupport;
@@ -281,7 +317,27 @@ if(window.updates){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!supportModal.classList.contains('hidden'))closeSupport();else closeM()}});
 document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)return copy(c.dataset.c);const o=e.target.closest('[data-o]');if(o){openM(+o.dataset.o);return}
   const s=e.target.closest('[data-sort]');if(s){const key=s.dataset.sort;sort=sort.key===key?{key,dir:-sort.dir}:{key,dir:1};render()}});
-$('q').oninput=render;$('rowmode').onchange=render;$('hideSinglePersonHouseholds').onchange=render;
+$('q').oninput=render;$('rowmode').onchange=render;$('hideSinglePersonHouseholds').onchange=render;$('hideAdultChildren').onchange=render;
+$('googleClientId').value=localStorage.getItem('googleClientId')||'';
+$('googleSheetUrl').value=localStorage.getItem('googleSheetUrl')||'';
+async function loadGoogle(button){
+  const clientId=$('googleClientId').value.trim(),clientSecret=$('googleClientSecret').value.trim(),spreadsheetUrl=$('googleSheetUrl').value.trim();
+  if(!clientId||!spreadsheetUrl){toast('Bitte OAuth-Client-ID und Tabellenlink in den Einstellungen eintragen');return}
+  if(!window.googleSheets){toast('Google-Abruf ist nur in der installierten App verfügbar');return}
+  button.disabled=true;button.textContent='Google-Anmeldung wird geöffnet …';
+  try{
+    localStorage.setItem('googleClientId',clientId);localStorage.setItem('googleSheetUrl',spreadsheetUrl);
+    const data=await window.googleSheets.load({clientId,clientSecret,spreadsheetUrl});
+    loadData(data,0);
+  }catch(error){
+    console.error('Google-Tabelle konnte nicht geladen werden:',error);
+    toast(error.message||'Google-Tabelle konnte nicht geladen werden');
+  }finally{
+    button.disabled=false;button.innerHTML='<i data-lucide="cloud-download" class="w-4 h-4"></i>Aus Google abrufen';ic();
+  }
+}
+$('googleLoad').onclick=()=>loadGoogle($('googleLoad'));
+$('googleReload').onclick=()=>loadGoogle($('googleReload'));
 $('mails').onclick=()=>{const m=list.map(r=>r.mail).filter(Boolean);m.length?copy(m.join('; ')):toast('Keine E-Mails')};
 $('names').onclick=()=>copy(list.map(r=>r.vn+' '+r.nn).join('\n'));
 $('reload').onclick=()=>{$('settings').classList.add('hidden');$('dash').classList.add('hidden');$('drop').classList.remove('hidden')};

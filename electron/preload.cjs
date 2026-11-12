@@ -10,3 +10,7 @@ contextBridge.exposeInMainWorld('updates', {
     return () => ipcRenderer.removeListener('updates:status', listener);
   }
 });
+
+contextBridge.exposeInMainWorld('googleSheets', {
+  load: (config) => ipcRenderer.invoke('google-sheets:load', config)
+});
