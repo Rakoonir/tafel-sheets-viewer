@@ -10,6 +10,7 @@ let mainWindow;
 let updateStatus = { state: 'idle' };
 let googleImportInProgress = false;
 const googleTokenPath = () => path.join(app.getPath('userData'), 'google-refresh-token.enc');
+const googleSettingsPath = () => path.join(app.getPath('userData'), 'google-settings.enc');
 
 function base64Url(value) {
   return value.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -34,8 +35,42 @@ async function saveGoogleCredentials(clientId, credentials) {
     throw new Error('Die sichere lokale Speicherung ist nicht verfügbar.');
   }
   const encrypted = safeStorage.encryptString(JSON.stringify({ clientId, ...credentials }));
+  await fs.mkdir(path.dirname(googleTokenPath()), { recursive: true });
   await fs.writeFile(googleTokenPath(), encrypted, { mode: 0o600 });
 }
+
+async function readGoogleSettings() {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('Die sichere lokale Speicherung ist nicht verfügbar.');
+  }
+  try {
+    return JSON.parse(safeStorage.decryptString(await fs.readFile(googleSettingsPath())));
+  } catch (error) {
+    if (error.code === 'ENOENT') return { clientId: '', clientSecret: '', spreadsheetUrl: '' };
+    throw new Error('Die gespeicherten Google-Einstellungen konnten nicht gelesen werden.');
+  }
+}
+
+async function saveGoogleSettings(settings) {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('Die sichere lokale Speicherung ist nicht verfügbar.');
+  }
+  const cleanSettings = {
+    clientId: typeof settings?.clientId === 'string' ? settings.clientId.trim() : '',
+    clientSecret: typeof settings?.clientSecret === 'string' ? settings.clientSecret.trim() : '',
+    spreadsheetUrl: typeof settings?.spreadsheetUrl === 'string' ? settings.spreadsheetUrl.trim() : ''
+  };
+  if (Object.values(cleanSettings).some(value => value.length > 4096)) {
+    throw new Error('Eine Google-Einstellung ist zu lang.');
+  }
+  const encrypted = safeStorage.encryptString(JSON.stringify(cleanSettings));
+  await fs.mkdir(path.dirname(googleSettingsPath()), { recursive: true });
+  await fs.writeFile(googleSettingsPath(), encrypted, { mode: 0o600 });
+  return cleanSettings;
+}
+
+ipcMain.handle('google-sheets:get-settings', () => readGoogleSettings());
+ipcMain.handle('google-sheets:save-settings', (_event, settings) => saveGoogleSettings(settings));
 
 async function exchangeGoogleToken(params, clientSecret) {
   if (clientSecret) params.client_secret = clientSecret;

@@ -90,7 +90,7 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
     </label>
     <div class="mt-6 border-t border-ln pt-4">
       <h3 class="font-semibold">Google Sheets</h3>
-      <p class="mt-1 text-sm text-mu">Die Angaben bleiben auf diesem Computer. Das Sheet wird mit Leseberechtigung über Ihr Google-Konto abgerufen. Client-ID und Link werden lokal gespeichert; das Client-Secret wird verschlüsselt auf diesem Computer gespeichert.</p>
+      <p class="mt-1 text-sm text-mu">Die Angaben bleiben auf diesem Computer. Client-ID, Client-Secret und Tabellenlink werden lokal verschlüsselt gespeichert. Das Sheet wird mit Leseberechtigung über Ihr Google-Konto abgerufen.</p>
       <label class="block mt-4 text-sm font-medium" for="googleClientId">OAuth-Client-ID</label>
       <input id="googleClientId" type="text" autocomplete="off" spellcheck="false" class="mt-1 w-full px-3 py-2 rounded-lg border border-ln bg-bg" placeholder="…apps.googleusercontent.com">
       <label class="block mt-3 text-sm font-medium" for="googleClientSecret">Client-Secret</label>
@@ -98,6 +98,10 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
       <label class="block mt-3 text-sm font-medium" for="googleSheetUrl">Link zur Google-Tabelle</label>
       <input id="googleSheetUrl" type="url" autocomplete="url" spellcheck="false" class="mt-1 w-full px-3 py-2 rounded-lg border border-ln bg-bg" placeholder="https://docs.google.com/spreadsheets/d/…">
       <p class="mt-2 text-xs text-mu">Das Client-Secret finden Sie in der Google Cloud Console bei den OAuth-Clientdetails. Beim ersten Abruf öffnet sich die Google-Anmeldung. Es wird nur Leserechte-Zugriff auf Google Sheets angefordert.</p>
+      <div class="mt-3 flex items-center gap-3">
+        <button id="saveGoogleSettings" class="btn">Einstellungen speichern</button>
+        <span id="googleSettingsStatus" class="text-sm text-mu" role="status" aria-live="polite"></span>
+      </div>
     </div>
   </div>
 </section>
@@ -318,15 +322,52 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!supportModal.cl
 document.addEventListener('click',e=>{const c=e.target.closest('[data-c]');if(c)return copy(c.dataset.c);const o=e.target.closest('[data-o]');if(o){openM(+o.dataset.o);return}
   const s=e.target.closest('[data-sort]');if(s){const key=s.dataset.sort;sort=sort.key===key?{key,dir:-sort.dir}:{key,dir:1};render()}});
 $('q').oninput=render;$('rowmode').onchange=render;$('hideSinglePersonHouseholds').onchange=render;$('hideAdultChildren').onchange=render;
-$('googleClientId').value=localStorage.getItem('googleClientId')||'';
-$('googleSheetUrl').value=localStorage.getItem('googleSheetUrl')||'';
+const googleSettingFields=['googleClientId','googleClientSecret','googleSheetUrl'];
+let settingsSaveQueue=Promise.resolve(),settingsSaveTimer;
+const googleSettings=()=>({clientId:$('googleClientId').value,clientSecret:$('googleClientSecret').value,spreadsheetUrl:$('googleSheetUrl').value});
+async function saveGoogleSettings(){
+  if(!window.googleSheets)return;
+  const status=$('googleSettingsStatus'),settings=googleSettings();
+  status.textContent='Speichert …';
+  settingsSaveQueue=settingsSaveQueue.catch(()=>{}).then(()=>window.googleSheets.saveSettings(settings));
+  try{
+    await settingsSaveQueue;
+    status.textContent='Einstellungen gespeichert';
+  }catch(error){
+    console.error('Google-Einstellungen konnten nicht gespeichert werden:',error);
+    status.textContent='Speichern fehlgeschlagen';
+    toast(error.message||'Google-Einstellungen konnten nicht gespeichert werden');
+    throw error;
+  }
+}
+window.googleSheets?.getSettings().then(settings=>{
+  $('googleClientId').value=settings.clientId||'';
+  $('googleClientSecret').value=settings.clientSecret||'';
+  $('googleSheetUrl').value=settings.spreadsheetUrl||'';
+}).catch(error=>{
+  console.error('Google-Einstellungen konnten nicht geladen werden:',error);
+  $('googleSettingsStatus').textContent='Einstellungen konnten nicht geladen werden';
+});
+googleSettingFields.forEach(id=>{
+  $(id).addEventListener('input',()=>{
+    clearTimeout(settingsSaveTimer);
+    $('googleSettingsStatus').textContent='Ungespeicherte Änderungen';
+    settingsSaveTimer=setTimeout(()=>saveGoogleSettings().catch(()=>{}),500);
+  });
+  $(id).addEventListener('change',()=>{
+    clearTimeout(settingsSaveTimer);
+    saveGoogleSettings().catch(()=>{});
+  });
+});
+$('saveGoogleSettings').onclick=()=>{clearTimeout(settingsSaveTimer);saveGoogleSettings().catch(()=>{})};
 async function loadGoogle(button){
   const clientId=$('googleClientId').value.trim(),clientSecret=$('googleClientSecret').value.trim(),spreadsheetUrl=$('googleSheetUrl').value.trim();
   if(!clientId||!spreadsheetUrl){toast('Bitte OAuth-Client-ID und Tabellenlink in den Einstellungen eintragen');return}
   if(!window.googleSheets){toast('Google-Abruf ist nur in der installierten App verfügbar');return}
   button.disabled=true;button.textContent='Google-Anmeldung wird geöffnet …';
   try{
-    localStorage.setItem('googleClientId',clientId);localStorage.setItem('googleSheetUrl',spreadsheetUrl);
+    clearTimeout(settingsSaveTimer);
+    await saveGoogleSettings();
     const data=await window.googleSheets.load({clientId,clientSecret,spreadsheetUrl});
     loadData(data,0);
   }catch(error){

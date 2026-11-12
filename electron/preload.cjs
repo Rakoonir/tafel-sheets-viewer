@@ -12,5 +12,7 @@ contextBridge.exposeInMainWorld('updates', {
 });
 
 contextBridge.exposeInMainWorld('googleSheets', {
+  getSettings: () => ipcRenderer.invoke('google-sheets:get-settings'),
+  saveSettings: (settings) => ipcRenderer.invoke('google-sheets:save-settings', settings),
   load: (config) => ipcRenderer.invoke('google-sheets:load', config)
 });
